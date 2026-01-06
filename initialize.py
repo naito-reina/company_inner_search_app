@@ -137,11 +137,16 @@ def initialize_retriever():
     # 埋め込みモデルの用意
     embeddings = OpenAIEmbeddings()
     
+    # 追記：チャンク分割の設定
+    CHUNK_SIZE = 500
+    CHUNK_OVERLAP = 50
+    SEPARATOR = "\n"
+
     # チャンク分割用のオブジェクトを作成
     text_splitter = CharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=50,
-        separator="\n"
+        chunk_size = CHUNK_SIZE,
+        chunk_overlap = CHUNK_OVERLAP,
+        separator = SEPARATOR
     )
 
     # チャンク分割を実施
