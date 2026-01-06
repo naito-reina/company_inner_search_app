@@ -8,6 +8,7 @@
 import os
 from dotenv import load_dotenv
 import streamlit as st
+import logging
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import HumanMessage
 from langchain_openai import ChatOpenAI
@@ -110,6 +111,13 @@ def get_llm_response(chat_message):
 
     # LLMへのリクエストとレスポンス取得
     llm_response = chain.invoke({"input": chat_message, "chat_history": st.session_state.chat_history})
+    
+    # デバッグログ: 取得したドキュメント数をログに出力
+    logger = logging.getLogger(ct.LOGGER_NAME)
+    if "context" in llm_response and llm_response["context"]:
+        document_count = len(llm_response["context"])
+        logger.info(f"[DEBUG] Retrieved document count: {document_count}")
+    
     # LLMレスポンスを会話履歴に追加
     st.session_state.chat_history.extend([HumanMessage(content=chat_message), llm_response["answer"]])
 
