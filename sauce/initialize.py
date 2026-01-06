@@ -25,7 +25,14 @@ import constants as ct
 # 設定関連
 ############################################################
 # 「.env」ファイルで定義した環境変数の読み込み
-load_dotenv()
+# スクリプトのディレクトリを基準に.envファイルのパスを指定
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+# .envファイルが存在するか確認してから読み込む
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    # .envファイルが存在しない場合でも、環境変数から読み込むことを試みる
+    load_dotenv()
 
 
 ############################################################
@@ -108,6 +115,15 @@ def initialize_retriever():
     # すでにRetrieverが作成済みの場合、後続の処理を中断
     if "retriever" in st.session_state:
         return
+    
+    # OpenAI APIキーが設定されているか確認
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        env_file_path = os.path.join(os.path.dirname(__file__), ".env")
+        if not os.path.exists(env_file_path):
+            raise ValueError(f".env file not found at: {env_file_path}. Please create .env file with OPENAI_API_KEY.")
+        else:
+            raise ValueError("OPENAI_API_KEY is not set in .env file. Please set OPENAI_API_KEY in .env file.")
     
     # RAGの参照先となるデータソースの読み込み
     docs_all = load_data_sources()

@@ -40,10 +40,64 @@ try:
     # 初期化処理（「initialize.py」の「initialize」関数を実行）
     initialize()
 except Exception as e:
-    # エラーログの出力
-    logger.error(f"{ct.INITIALIZE_ERROR_MESSAGE}\n{e}")
-    # エラーメッセージの画面表示
-    st.error(utils.build_error_message(ct.INITIALIZE_ERROR_MESSAGE), icon=ct.ERROR_ICON)
+    # エラーの詳細情報を取得（安全に文字列化）
+    error_type = type(e).__name__
+    
+    # エラーメッセージを安全に取得（reprを使用してエンコーディングエラーを回避）
+    try:
+        # エラーメッセージを取得（reprを使用して安全に文字列化）
+        error_repr = repr(e)
+        # reprから実際のメッセージを抽出
+        if error_repr.startswith(error_type + "(") and error_repr.endswith(")"):
+            error_message = error_repr[len(error_type) + 1:-1]
+            # クォートを除去
+            if error_message.startswith("'") and error_message.endswith("'"):
+                error_message = error_message[1:-1]
+            elif error_message.startswith('"') and error_message.endswith('"'):
+                error_message = error_message[1:-1]
+        else:
+            error_message = str(e)
+    except Exception:
+        error_message = f"Error occurred: {error_type}"
+    
+    # エラーメッセージをUTF-8で安全に処理
+    try:
+        # UTF-8でエンコード可能か確認
+        error_message_bytes = error_message.encode('utf-8')
+        error_message = error_message_bytes.decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        # エンコーディングエラーの場合、ASCII互換の文字列に変換
+        try:
+            error_message = error_message.encode('utf-8', 'replace').decode('utf-8')
+        except Exception:
+            error_message = f"Error occurred: {error_type}"
+    except Exception:
+        error_message = f"Error occurred: {error_type}"
+    
+    # エラーログの出力（ロガーが設定されている場合のみ）
+    try:
+        # エラーメッセージをASCII互換の文字列に変換してログに記録
+        safe_error_msg = error_message.encode('ascii', 'replace').decode('ascii')
+        logger.error(f"Initialization failed. Error type: {error_type}, Message: {safe_error_msg}")
+    except Exception:
+        # ロガーが設定されていない場合やエンコーディングエラーの場合は無視
+        pass
+    
+    # エラーメッセージの画面表示（詳細情報を含む、UTF-8で安全に処理）
+    try:
+        # エラーメッセージをUTF-8で安全に処理してから画面に表示
+        error_detail = f"Error Type: {error_type}\nError Message: {error_message}"
+        full_error_message = f"{ct.INITIALIZE_ERROR_MESSAGE}\n\n{error_detail}\n\n{ct.COMMON_ERROR_MESSAGE}"
+        # Streamlitのエラー表示はUTF-8をサポートしているはずなので、そのまま表示
+        st.error(full_error_message, icon=ct.ERROR_ICON)
+    except UnicodeEncodeError as ue:
+        # エンコーディングエラーが発生した場合、英語のメッセージを表示
+        error_detail_en = f"Error Type: {error_type}\nError Message: {error_message.encode('ascii', 'replace').decode('ascii')}"
+        full_error_message_en = f"Initialization failed.\n\n{error_detail_en}\n\nPlease contact the administrator if this error persists."
+        st.error(full_error_message_en, icon=ct.ERROR_ICON)
+    except Exception as display_error:
+        # その他のエラーが発生した場合、最小限のメッセージを表示
+        st.error(f"Initialization failed. Error type: {error_type}. Please contact the administrator.", icon=ct.ERROR_ICON)
     # 後続の処理を中断
     st.stop()
 
